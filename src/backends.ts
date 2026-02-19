@@ -1,4 +1,4 @@
-import express from "express";
+import express from 'express';
 
 // =================================================================
 // BACKEND SERVERS — Simple services the gateway proxies to
@@ -19,6 +19,48 @@ import express from "express";
 function createBackend(port: number, name: string){
     const app = express();
     app.use(express.json());
+
+    // Simulate variable response times
+    app.use((req, res, next) => {
+        const delay = Math.random() * 200; // 0-200ms
+        setTimeout(next, delay);
+    });
+
+    app.get('/api/users', (req, res) => {
+        res.json({
+            server: name,
+            port,
+            data: [
+                { id: 1, name: 'Alice' },
+                { id: 2, name: 'Bob' },
+                { id: 3, name: 'Charlie' },
+            ],
+            timestamp: new Date().toISOString(),
+        });
+    });
+
+    app.get('/api/health', (req, res) => {
+        res.json({
+            server: name,
+            status: 'healthy',
+            uptime: process.uptime()
+        });
+    });
+
+    app.get('/{*path}', (req, res) => {
+        res.json({
+            server: name,
+            port,
+            method: req.method,
+            query: req.query,
+            headers: {
+                host: req.headers.host,
+                'user-agent': req.headers['user-agent']
+            },
+            timestamp: new Date().toISOString(),
+        });
+    });
+
 
     app.listen(port, () => {
         console.log(`   ${name} running on http://localhost:${port}`);
