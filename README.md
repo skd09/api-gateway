@@ -342,7 +342,7 @@ This is **Project 2** of a 3-project distributed systems portfolio:
 
 | # | Project | Concepts |
 |---|---------|----------|
-| 1 | [Notification Engine](https://github.com/YOUR_USERNAME/notification-engine) | Queues, DLQ, Redis, Pub/Sub, Polling |
+| 1 | [Notification Engine](https://github.com/skd09/notification-engine) | Queues, DLQ, Redis, Pub/Sub, Polling |
 | **2** | **API Gateway** (this repo) | Rate Limiting, Load Balancing, Circuit Breaker, Middleware Pipeline |
 | 3 | Distributed Task Scheduler | Consistency, Leader Election, Sharding |
 
