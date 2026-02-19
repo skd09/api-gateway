@@ -3,63 +3,237 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>API Gateway Dashboard</title>
+  <title>API Gateway — Control Plane</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
   <style>
+    :root {
+      --bg-deep: #080c14;
+      --bg-card: #111827;
+      --bg-elevated: #1a2332;
+      --bg-input: #0d1420;
+      --border: #1e2d3d;
+      --border-hover: #2a3f55;
+      --text-primary: #e8edf4;
+      --text-secondary: #8899aa;
+      --text-muted: #556677;
+      --accent-blue: #4d8eff;
+      --accent-green: #34d399;
+      --accent-red: #f06060;
+      --accent-yellow: #fbbf24;
+      --accent-purple: #a78bfa;
+      --accent-cyan: #22d3ee;
+      --glow-blue: rgba(77, 142, 255, 0.12);
+      --glow-green: rgba(52, 211, 153, 0.12);
+      --glow-red: rgba(240, 96, 96, 0.12);
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 1400px; margin: 0 auto; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Background texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 20% 0%, rgba(77,142,255,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse at 80% 100%, rgba(167,139,250,0.04) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app { position: relative; z-index: 1; max-width: 1440px; margin: 0 auto; padding: 24px 28px 40px; }
+
+    /* Header */
+    .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-icon { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .header h1 { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+    .header h1 span { color: var(--text-muted); font-weight: 400; font-size: 13px; margin-left: 8px; }
+    .header-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); animation: pulse-dot 2s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+    /* Pipeline visualization */
+    .pipeline-bar {
+      display: flex; align-items: center; gap: 0; margin-bottom: 24px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px;
+      padding: 10px 16px; overflow-x: auto;
+    }
+    .pipeline-node {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+      padding: 5px 12px; border-radius: 6px; background: var(--bg-elevated);
+      border: 1px solid var(--border); white-space: nowrap; color: var(--text-secondary);
+    }
+    .pipeline-arrow { color: var(--text-muted); margin: 0 6px; font-size: 10px; flex-shrink: 0; }
+
+    /* Grid */
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .grid-full { grid-column: 1 / -1; }
-    .card { background: #1e293b; border-radius: 12px; padding: 20px; border: 1px solid #334155; }
-    .card h2 { font-size: 14px; text-transform: uppercase; color: #94a3b8; margin-bottom: 12px; letter-spacing: 0.05em; }
-    h1 { text-align: center; margin-bottom: 20px; font-size: 24px; }
-    h1 span { color: #94a3b8; font-weight: 400; font-size: 14px; }
-    .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
-    .stat { background: #0f172a; border-radius: 8px; padding: 12px 16px; flex: 1; min-width: 120px; text-align: center; }
-    .stat .value { font-size: 28px; font-weight: 700; }
-    .stat .label { font-size: 11px; color: #64748b; margin-top: 4px; }
-    .green { color: #4ade80; }
-    .red { color: #f87171; }
-    .yellow { color: #fbbf24; }
-    .blue { color: #60a5fa; }
-    .purple { color: #a78bfa; }
-    .cyan { color: #22d3ee; }
-    button { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; transition: all 0.15s; }
-    button:hover { transform: translateY(-1px); }
-    .btn-blue { background: #3b82f6; color: white; }
-    .btn-green { background: #22c55e; color: white; }
-    .btn-red { background: #ef4444; color: white; }
-    .btn-yellow { background: #f59e0b; color: #1e293b; }
-    .btn-gray { background: #475569; color: white; }
-    .btn-sm { padding: 4px 10px; font-size: 11px; }
-    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
-    .btn-active { outline: 2px solid #60a5fa; outline-offset: 2px; }
-    .backend-card { background: #0f172a; border-radius: 8px; padding: 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-    .backend-name { font-weight: 700; font-size: 16px; }
-    .backend-meta { display: flex; gap: 16px; align-items: center; font-size: 13px; }
-    .circuit-badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
-    .circuit-CLOSED { background: #166534; color: #4ade80; }
-    .circuit-OPEN { background: #7f1d1d; color: #f87171; }
-    .circuit-HALF_OPEN { background: #78350f; color: #fbbf24; }
-    .bar-container { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
-    .bar-label { width: 80px; font-size: 12px; color: #94a3b8; }
-    .bar-track { flex: 1; height: 20px; background: #0f172a; border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; }
-    .log-container { max-height: 250px; overflow-y: auto; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; }
-    .log-entry { padding: 4px 8px; border-bottom: 1px solid #1e293b; }
-    .log-entry:nth-child(odd) { background: rgba(255,255,255,0.02); }
-    select { background: #0f172a; color: #e2e8f0; border: 1px solid #475569; border-radius: 6px; padding: 6px 10px; font-size: 13px; }
-    .algo-desc { font-size: 12px; color: #64748b; margin-top: 4px; }
-    .burst-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px;
+      padding: 20px 22px; transition: border-color 0.2s;
+    }
+    .card:hover { border-color: var(--border-hover); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .card-title {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--text-muted); display: flex; align-items: center; gap: 6px;
+    }
+    .card-title .icon { font-size: 13px; }
+
+    /* Stat row */
+    .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+    .stat-box {
+      background: var(--bg-input); border-radius: 8px; padding: 14px 12px;
+      text-align: center; border: 1px solid transparent; transition: border-color 0.2s;
+    }
+    .stat-box:hover { border-color: var(--border); }
+    .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 26px; font-weight: 700; line-height: 1.1; }
+    .stat-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin-top: 6px; }
+
+    /* Algorithm buttons */
+    .algo-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .algo-btn {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 600;
+      padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--bg-input); color: var(--text-secondary); cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .algo-btn:hover { border-color: var(--accent-blue); color: var(--text-primary); }
+    .algo-btn.active {
+      background: rgba(77, 142, 255, 0.12); border-color: var(--accent-blue);
+      color: var(--accent-blue); box-shadow: 0 0 12px rgba(77, 142, 255, 0.08);
+    }
+    .algo-desc { font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+
+    /* Backend cards */
+    .backend-row {
+      background: var(--bg-input); border-radius: 10px; padding: 14px 18px;
+      margin-bottom: 8px; border: 1px solid var(--border);
+      display: grid; grid-template-columns: 180px 1fr auto; align-items: center; gap: 16px;
+    }
+    .backend-row:last-child { margin-bottom: 0; }
+    .backend-info {}
+    .backend-name { font-weight: 700; font-size: 14px; display: flex; align-items: center; gap: 8px; }
+    .backend-port { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+    .backend-health { font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .health-up { color: var(--accent-green); }
+    .health-down { color: var(--accent-red); }
+
+    .backend-bar-wrap { display: flex; align-items: center; gap: 10px; }
+    .bar-track { flex: 1; height: 22px; background: var(--bg-deep); border-radius: 4px; overflow: hidden; min-width: 100px; }
+    .bar-fill {
+      height: 100%; border-radius: 4px; display: flex; align-items: center;
+      padding: 0 8px; font-family: 'JetBrains Mono', monospace;
+      font-size: 10px; font-weight: 700; color: white;
+      transition: width 0.4s ease; min-width: fit-content;
+    }
+    .bar-count { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-secondary); min-width: 60px; text-align: right; }
+
+    .backend-actions { display: flex; gap: 5px; flex-shrink: 0; }
+
+    /* Circuit badge */
+    .circuit-badge {
+      font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 4px; letter-spacing: 0.04em;
+    }
+    .cb-CLOSED { background: rgba(52, 211, 153, 0.12); color: var(--accent-green); }
+    .cb-OPEN { background: rgba(240, 96, 96, 0.15); color: var(--accent-red); }
+    .cb-HALF_OPEN { background: rgba(251, 191, 36, 0.12); color: var(--accent-yellow); }
+
+    /* Buttons */
+    .btn {
+      font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 600;
+      padding: 5px 10px; border-radius: 5px; border: 1px solid var(--border);
+      cursor: pointer; transition: all 0.15s; background: var(--bg-elevated); color: var(--text-secondary);
+    }
+    .btn:hover { border-color: var(--border-hover); color: var(--text-primary); transform: translateY(-1px); }
+    .btn-danger { border-color: rgba(240, 96, 96, 0.3); color: var(--accent-red); }
+    .btn-danger:hover { background: rgba(240, 96, 96, 0.1); border-color: var(--accent-red); }
+    .btn-warn { border-color: rgba(251, 191, 36, 0.3); color: var(--accent-yellow); }
+    .btn-warn:hover { background: rgba(251, 191, 36, 0.1); border-color: var(--accent-yellow); }
+    .btn-primary {
+      background: var(--accent-blue); border-color: var(--accent-blue); color: white;
+    }
+    .btn-primary:hover { background: #3a7aee; box-shadow: 0 0 16px rgba(77, 142, 255, 0.2); }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+    /* Burst tester */
+    .burst-form { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .burst-select {
+      font-family: 'JetBrains Mono', monospace; font-size: 12px;
+      background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border);
+      border-radius: 6px; padding: 7px 10px; cursor: pointer;
+    }
+    .burst-results { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+    .burst-stat {
+      background: var(--bg-input); border-radius: 6px; padding: 10px; text-align: center;
+    }
+    .burst-stat .val { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; }
+    .burst-stat .lbl { font-size: 10px; color: var(--text-muted); margin-top: 2px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.04em; }
+    .burst-timing { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); margin-top: 8px; }
+
+    /* Event log */
+    .log-list { max-height: 280px; overflow-y: auto; }
+    .log-list::-webkit-scrollbar { width: 4px; }
+    .log-list::-webkit-scrollbar-track { background: transparent; }
+    .log-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    .log-entry {
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6;
+      padding: 4px 8px; border-left: 2px solid var(--border); margin-bottom: 2px;
+    }
+    .log-time { color: var(--text-muted); margin-right: 8px; }
+    .log-empty { color: var(--text-muted); text-align: center; padding: 40px 0; font-size: 12px; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(3, 1fr); }
+      .backend-row { grid-template-columns: 1fr; gap: 10px; }
+      .backend-actions { justify-content: flex-start; }
+    }
   </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect, useRef, useCallback } = React;
+    const { useState, useEffect, useCallback } = React;
     const API = 'http://localhost:4000';
+
+    const ALGO_INFO = {
+      'fixed-window':    'Counter per time window. Simple but has boundary burst problem at window edges.',
+      'sliding-log':     'Stores every timestamp. Perfectly accurate, but O(N) memory per client.',
+      'sliding-counter': 'Weighted average of current + previous window. Best balance — used by Stripe, Cloudflare.',
+      'token-bucket':    'Tokens refill at steady rate. Allows bursts up to capacity. Used by AWS API Gateway.',
+      'leaky-bucket':    'Queue drains at fixed rate, smoothing traffic. No bursts allowed. Used by Shopify.',
+    };
+
+    const LB_INFO = {
+      'round-robin':          'Simple rotation: A → B → C → A → B → C. Equal distribution.',
+      'weighted-round-robin': 'Proportional to weight. A(3) gets 3× traffic vs C(1).',
+      'least-connections':    'Routes to server with fewest active requests. Handles slow servers.',
+      'ip-hash':              'Same client IP always hits same server. Sticky sessions.',
+      'consistent-hash':      'Hash ring — adding/removing servers only reshuffles ~1/N traffic.',
+    };
+
+    const BACKEND_COLORS = {
+      'Backend-A': 'var(--accent-blue)',
+      'Backend-B': 'var(--accent-green)',
+      'Backend-C': 'var(--accent-purple)',
+    };
 
     function App() {
       const [health, setHealth] = useState(null);
@@ -71,204 +245,162 @@
       const fetchHealth = useCallback(async () => {
         try {
           const res = await fetch(`${API}/gateway/health`);
-          const data = await res.json();
-          setHealth(data);
-        } catch(e) {
-          console.error('Health fetch failed:', e);
-        }
+          setHealth(await res.json());
+        } catch(e) {}
       }, []);
 
       useEffect(() => {
         fetchHealth();
-        const interval = setInterval(fetchHealth, 2000);
-        return () => clearInterval(interval);
+        const id = setInterval(fetchHealth, 2000);
+        return () => clearInterval(id);
       }, [fetchHealth]);
 
-      const addLog = (msg) => {
-        setLogs(prev => [{
-          time: new Date().toLocaleTimeString(),
-          msg,
-        }, ...prev].slice(0, 100));
-      };
+      const log = (msg) => setLogs(p => [{ t: new Date().toLocaleTimeString(), msg }, ...p].slice(0, 80));
 
-      const switchRateLimiter = async (name) => {
-        await fetch(`${API}/gateway/rate-limiter/${name}`, { method: 'POST' });
-        addLog(`Switched rate limiter → ${name}`);
-        fetchHealth();
-      };
-
-      const switchLoadBalancer = async (name) => {
-        await fetch(`${API}/gateway/load-balancer/${name}`, { method: 'POST' });
-        addLog(`Switched load balancer → ${name}`);
-        fetchHealth();
-      };
-
-      const toggleBackend = async (name) => {
-        const res = await fetch(`${API}/gateway/backend/${name}/toggle`, { method: 'POST' });
-        const data = await res.json();
-        addLog(`${name} → ${data.healthy ? 'HEALTHY' : 'DOWN'}`);
-        fetchHealth();
-      };
-
-      const resetCircuit = async (name) => {
-        await fetch(`${API}/gateway/circuit/${name}/reset`, { method: 'POST' });
-        addLog(`Circuit reset: ${name}`);
-        fetchHealth();
-      };
-
-      const crashBackend = async (port) => {
-        try {
-          await fetch(`http://localhost:${port}/admin/crash`, { method: 'POST' });
-          addLog(`Toggled crash on port ${port}`);
-        } catch(e) {
-          addLog(`Cannot reach port ${port} (might already be down)`);
-        }
-      };
-
-      const resetMetrics = async () => {
-        await fetch(`${API}/gateway/metrics/reset`, { method: 'POST' });
-        addLog('Metrics reset');
-        fetchHealth();
-      };
+      const switchRL = async (n) => { await fetch(`${API}/gateway/rate-limiter/${n}`, { method: 'POST' }); log(`Rate limiter → ${n}`); fetchHealth(); };
+      const switchLB = async (n) => { await fetch(`${API}/gateway/load-balancer/${n}`, { method: 'POST' }); log(`Load balancer → ${n}`); fetchHealth(); };
+      const toggleBE = async (n) => { const r = await (await fetch(`${API}/gateway/backend/${n}/toggle`, { method: 'POST' })).json(); log(`${n} → ${r.healthy ? 'UP' : 'DOWN'}`); fetchHealth(); };
+      const resetCB  = async (n) => { await fetch(`${API}/gateway/circuit/${n}/reset`, { method: 'POST' }); log(`Circuit reset: ${n}`); fetchHealth(); };
+      const crashBE  = async (p) => { try { await fetch(`http://localhost:${p}/admin/crash`, { method: 'POST' }); log(`Crash toggled: port ${p}`); } catch(e) { log(`Port ${p} unreachable`); }};
+      const resetM   = async () => { await fetch(`${API}/gateway/metrics/reset`, { method: 'POST' }); log('Metrics reset'); fetchHealth(); };
 
       const runBurst = async () => {
-        setBurstRunning(true);
-        setBurstResults(null);
-        const results = { success: 0, rateLimited: 0, error: 0, times: [] };
-        const start = Date.now();
-
-        addLog(`Burst started: ${burstCount} requests`);
-
-        const promises = Array.from({ length: burstCount }, async (_, i) => {
-          const t0 = Date.now();
+        setBurstRunning(true); setBurstResults(null);
+        const r = { ok: 0, limited: 0, err: 0, times: [] };
+        log(`Burst: ${burstCount} requests`);
+        const t0 = Date.now();
+        await Promise.all(Array.from({ length: burstCount }, async () => {
+          const s = Date.now();
           try {
             const res = await fetch(`${API}/api/users`);
-            const elapsed = Date.now() - t0;
-            results.times.push(elapsed);
-            if (res.status === 200) results.success++;
-            else if (res.status === 429) results.rateLimited++;
-            else results.error++;
-          } catch(e) {
-            results.error++;
-          }
-        });
-
-        await Promise.all(promises);
-        const totalTime = Date.now() - start;
-        results.totalTime = totalTime;
-        results.avgTime = Math.round(results.times.reduce((a,b) => a+b, 0) / results.times.length);
-
-        setBurstResults(results);
-        setBurstRunning(false);
-        addLog(`Burst done: ${results.success} ok, ${results.rateLimited} limited, ${results.error} errors (${totalTime}ms)`);
+            r.times.push(Date.now() - s);
+            if (res.status === 200) r.ok++; else if (res.status === 429) r.limited++; else r.err++;
+          } catch(e) { r.err++; }
+        }));
+        r.total = Date.now() - t0;
+        r.avg = r.times.length ? Math.round(r.times.reduce((a,b) => a+b, 0) / r.times.length) : 0;
+        setBurstResults(r); setBurstRunning(false);
+        log(`Done: ${r.ok} ok / ${r.limited} limited / ${r.err} err — ${r.total}ms`);
         fetchHealth();
       };
 
-      if (!health) return <div style={{textAlign:'center',padding:60}}>Connecting to gateway...</div>;
+      if (!health) return (
+        <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🚪</div>
+            <div style={{ color: 'var(--text-secondary)', fontSize: 14 }}>Connecting to gateway...</div>
+            <div style={{ color: 'var(--text-muted)', fontSize: 12, marginTop: 6 }}>Make sure the gateway is running on port 4000</div>
+          </div>
+        </div>
+      );
 
       const m = health.metrics || {};
-      const totalBackendReqs = Object.values(m.byBackend || {}).reduce((a,b) => a + b, 0);
-
-      const algoDescriptions = {
-        'fixed-window': 'Counter per time window. Simple but boundary burst problem.',
-        'sliding-log': 'Stores every timestamp. Perfectly accurate but memory-heavy.',
-        'sliding-counter': 'Weighted average of windows. Best balance. Used by Stripe.',
-        'token-bucket': 'Tokens refill steadily. Allows bursts. Used by AWS.',
-        'leaky-bucket': 'Queue drains at fixed rate. Smooths traffic. Used by Shopify.',
-      };
-
-      const lbDescriptions = {
-        'round-robin': 'Simple rotation: A → B → C → A → B → C',
-        'weighted-round-robin': 'A gets 3x, B gets 2x, C gets 1x traffic',
-        'least-connections': 'Send to server with fewest active requests',
-        'ip-hash': 'Same client IP always goes to same server',
-        'consistent-hash': 'Hash ring — minimal disruption when servers change',
-      };
+      const totalBE = Object.values(m.byBackend || {}).reduce((a, b) => a + b, 0);
 
       return (
-        <div>
-          <h1>🚪 API Gateway Dashboard <span>Layer 6</span></h1>
+        <div className="app">
+          {/* Header */}
+          <div className="header">
+            <div className="header-left">
+              <div className="header-icon">🚪</div>
+              <h1>API Gateway <span>Control Plane</span></h1>
+            </div>
+            <div className="header-status">
+              <div className="status-dot"></div>
+              <span>Live</span>
+              <span style={{ color: 'var(--text-muted)', margin: '0 4px' }}>·</span>
+              <span style={{ fontFamily: 'JetBrains Mono', fontSize: 11 }}>localhost:4000</span>
+            </div>
+          </div>
+
+          {/* Pipeline */}
+          <div className="pipeline-bar">
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', marginRight: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pipeline</span>
+            {(health.pipeline || []).map((name, i) => (
+              <React.Fragment key={name}>
+                <div className="pipeline-node">{name}</div>
+                {i < health.pipeline.length - 1 && <span className="pipeline-arrow">→</span>}
+              </React.Fragment>
+            ))}
+          </div>
 
           <div className="grid">
             {/* Stats */}
             <div className="card grid-full">
-              <h2>System Stats</h2>
-              <div className="stat-row">
-                <div className="stat"><div className="value blue">{m.totalRequests || 0}</div><div className="label">Total Requests</div></div>
-                <div className="stat"><div className="value green">{m.proxied || 0}</div><div className="label">Proxied</div></div>
-                <div className="stat"><div className="value yellow">{m.rateLimited || 0}</div><div className="label">Rate Limited</div></div>
-                <div className="stat"><div className="value red">{m.circuitBroken || 0}</div><div className="label">Circuit Broken</div></div>
-                <div className="stat"><div className="value red">{m.errors || 0}</div><div className="label">Errors</div></div>
+              <div className="card-header">
+                <div className="card-title"><span className="icon">📊</span> System Metrics</div>
+                <button className="btn" onClick={resetM}>Reset</button>
               </div>
-              <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                <span style={{fontSize:12,color:'#64748b'}}>Pipeline:</span>
-                {(health.pipeline || []).map((name, i) => (
-                  <span key={name} style={{display:'flex',alignItems:'center',gap:4}}>
-                    <span style={{background:'#334155',padding:'3px 8px',borderRadius:4,fontSize:11,fontWeight:600}}>{name}</span>
-                    {i < health.pipeline.length - 1 && <span style={{color:'#475569'}}>→</span>}
-                  </span>
-                ))}
+              <div className="stats-grid">
+                <div className="stat-box"><div className="stat-value" style={{ color: 'var(--accent-blue)' }}>{m.totalRequests || 0}</div><div className="stat-label">Total</div></div>
+                <div className="stat-box"><div className="stat-value" style={{ color: 'var(--accent-green)' }}>{m.proxied || 0}</div><div className="stat-label">Proxied</div></div>
+                <div className="stat-box"><div className="stat-value" style={{ color: 'var(--accent-yellow)' }}>{m.rateLimited || 0}</div><div className="stat-label">Rate Limited</div></div>
+                <div className="stat-box"><div className="stat-value" style={{ color: 'var(--accent-red)' }}>{m.circuitBroken || 0}</div><div className="stat-label">Circuit Open</div></div>
+                <div className="stat-box"><div className="stat-value" style={{ color: 'var(--accent-red)' }}>{m.errors || 0}</div><div className="stat-label">Errors</div></div>
               </div>
             </div>
 
             {/* Rate Limiter */}
             <div className="card">
-              <h2>Rate Limiter</h2>
-              <div className="btn-group">
-                {Object.keys(algoDescriptions).map(name => (
-                  <button
-                    key={name}
-                    className={`btn-sm ${health.rateLimiter === name ? 'btn-blue btn-active' : 'btn-gray'}`}
-                    onClick={() => switchRateLimiter(name)}
-                  >{name}</button>
+              <div className="card-header">
+                <div className="card-title"><span className="icon">🛡️</span> Rate Limiter</div>
+              </div>
+              <div className="algo-group">
+                {Object.keys(ALGO_INFO).map(name => (
+                  <button key={name} className={`algo-btn ${health.rateLimiter === name ? 'active' : ''}`} onClick={() => switchRL(name)}>{name}</button>
                 ))}
               </div>
-              <div className="algo-desc">{algoDescriptions[health.rateLimiter]}</div>
+              <div className="algo-desc">{ALGO_INFO[health.rateLimiter]}</div>
             </div>
 
             {/* Load Balancer */}
             <div className="card">
-              <h2>Load Balancer</h2>
-              <div className="btn-group">
-                {Object.keys(lbDescriptions).map(name => (
-                  <button
-                    key={name}
-                    className={`btn-sm ${health.loadBalancer === name ? 'btn-blue btn-active' : 'btn-gray'}`}
-                    onClick={() => switchLoadBalancer(name)}
-                  >{name}</button>
+              <div className="card-header">
+                <div className="card-title"><span className="icon">⚖️</span> Load Balancer</div>
+              </div>
+              <div className="algo-group">
+                {Object.keys(LB_INFO).map(name => (
+                  <button key={name} className={`algo-btn ${health.loadBalancer === name ? 'active' : ''}`} onClick={() => switchLB(name)}>{name}</button>
                 ))}
               </div>
-              <div className="algo-desc">{lbDescriptions[health.loadBalancer]}</div>
+              <div className="algo-desc">{LB_INFO[health.loadBalancer]}</div>
             </div>
 
             {/* Backends */}
             <div className="card grid-full">
-              <h2>Backend Servers</h2>
+              <div className="card-header">
+                <div className="card-title"><span className="icon">🖥️</span> Backend Servers</div>
+              </div>
               {(health.backends || []).map(b => {
                 const reqs = b.requests || 0;
-                const pct = totalBackendReqs > 0 ? (reqs / totalBackendReqs * 100).toFixed(1) : 0;
-                const colors = { 'Backend-A': '#3b82f6', 'Backend-B': '#22c55e', 'Backend-C': '#a78bfa' };
-
+                const pct = totalBE > 0 ? (reqs / totalBE * 100) : 0;
+                const color = BACKEND_COLORS[b.name] || 'var(--accent-blue)';
                 return (
-                  <div className="backend-card" key={b.name}>
-                    <div>
-                      <div className="backend-name">{b.name} <span style={{color:'#64748b',fontSize:12}}>:{b.port}</span></div>
-                      <div style={{marginTop:6}}>
-                        <div className="bar-container">
-                          <div className="bar-track" style={{width:200}}>
-                            <div className="bar-fill" style={{width:`${pct}%`, background: colors[b.name] || '#3b82f6'}}>{reqs > 0 ? `${reqs} (${pct}%)` : ''}</div>
-                          </div>
-                        </div>
+                  <div className="backend-row" key={b.name}>
+                    <div className="backend-info">
+                      <div className="backend-name">
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block', flexShrink: 0 }}></span>
+                        {b.name}
+                        <span className="backend-port">:{b.port}</span>
+                      </div>
+                      <div className="backend-health">
+                        <span className={b.healthy ? 'health-up' : 'health-down'}>{b.healthy ? '● Healthy' : '● Down'}</span>
+                        <span style={{ margin: '0 8px', color: 'var(--text-muted)' }}>·</span>
+                        <span className={`circuit-badge cb-${b.circuitState}`}>{b.circuitState.replace('_', '-')}</span>
                       </div>
                     </div>
-                    <div className="backend-meta">
-                      <span className={`circuit-badge circuit-${b.circuitState}`}>{b.circuitState}</span>
-                      <span style={{color: b.healthy ? '#4ade80' : '#f87171', fontWeight: 600}}>{b.healthy ? 'Healthy' : 'Down'}</span>
-                      <div style={{display:'flex',gap:4}}>
-                        <button className="btn-sm btn-yellow" onClick={() => toggleBackend(b.name)}>Toggle</button>
-                        <button className="btn-sm btn-red" onClick={() => crashBackend(b.port)}>Crash</button>
-                        <button className="btn-sm btn-gray" onClick={() => resetCircuit(b.name)}>Reset CB</button>
+                    <div className="backend-bar-wrap">
+                      <div className="bar-track">
+                        <div className="bar-fill" style={{ width: `${Math.max(pct, pct > 0 ? 8 : 0)}%`, background: color }}>
+                          {pct > 12 ? `${pct.toFixed(0)}%` : ''}
+                        </div>
                       </div>
+                      <div className="bar-count">{reqs} reqs</div>
+                    </div>
+                    <div className="backend-actions">
+                      <button className="btn btn-warn" onClick={() => toggleBE(b.name)}>Toggle</button>
+                      <button className="btn btn-danger" onClick={() => crashBE(b.port)}>Crash</button>
+                      <button className="btn" onClick={() => resetCB(b.name)}>Reset CB</button>
                     </div>
                   </div>
                 );
@@ -277,41 +409,44 @@
 
             {/* Burst Tester */}
             <div className="card">
-              <h2>Load Tester</h2>
-              <div className="burst-controls">
-                <select value={burstCount} onChange={e => setBurstCount(Number(e.target.value))}>
+              <div className="card-header">
+                <div className="card-title"><span className="icon">🚀</span> Load Tester</div>
+              </div>
+              <div className="burst-form">
+                <select className="burst-select" value={burstCount} onChange={e => setBurstCount(Number(e.target.value))}>
                   <option value={10}>10 requests</option>
                   <option value={20}>20 requests</option>
                   <option value={50}>50 requests</option>
                   <option value={100}>100 requests</option>
                 </select>
-                <button className="btn-blue" onClick={runBurst} disabled={burstRunning}>
-                  {burstRunning ? 'Running...' : '🚀 Send Burst'}
+                <button className="btn btn-primary" onClick={runBurst} disabled={burstRunning}>
+                  {burstRunning ? '⏳ Running...' : '🚀 Send Burst'}
                 </button>
-                <button className="btn-gray" onClick={resetMetrics}>Reset Metrics</button>
               </div>
               {burstResults && (
-                <div style={{marginTop:12}}>
-                  <div className="stat-row">
-                    <div className="stat"><div className="value green" style={{fontSize:20}}>{burstResults.success}</div><div className="label">Success</div></div>
-                    <div className="stat"><div className="value yellow" style={{fontSize:20}}>{burstResults.rateLimited}</div><div className="label">Rate Limited</div></div>
-                    <div className="stat"><div className="value red" style={{fontSize:20}}>{burstResults.error}</div><div className="label">Errors</div></div>
+                <div>
+                  <div className="burst-results">
+                    <div className="burst-stat"><div className="val" style={{ color: 'var(--accent-green)' }}>{burstResults.ok}</div><div className="lbl">Success</div></div>
+                    <div className="burst-stat"><div className="val" style={{ color: 'var(--accent-yellow)' }}>{burstResults.limited}</div><div className="lbl">Rate Limited</div></div>
+                    <div className="burst-stat"><div className="val" style={{ color: 'var(--accent-red)' }}>{burstResults.err}</div><div className="lbl">Errors</div></div>
                   </div>
-                  <div style={{fontSize:12,color:'#94a3b8',marginTop:4}}>
-                    Total: {burstResults.totalTime}ms | Avg response: {burstResults.avgTime}ms
-                  </div>
+                  <div className="burst-timing">Total: {burstResults.total}ms · Avg: {burstResults.avg}ms</div>
                 </div>
               )}
             </div>
 
             {/* Event Log */}
             <div className="card">
-              <h2>Event Log</h2>
-              <div className="log-container">
-                {logs.length === 0 && <div style={{color:'#475569',padding:20,textAlign:'center'}}>No events yet. Try sending a burst!</div>}
-                {logs.map((log, i) => (
+              <div className="card-header">
+                <div className="card-title"><span className="icon">📝</span> Event Log</div>
+                {logs.length > 0 && <button className="btn" onClick={() => setLogs([])}>Clear</button>}
+              </div>
+              <div className="log-list">
+                {logs.length === 0 && <div className="log-empty">No events yet — try sending a burst</div>}
+                {logs.map((l, i) => (
                   <div className="log-entry" key={i}>
-                    <span style={{color:'#475569'}}>{log.time}</span> {log.msg}
+                    <span className="log-time">{l.t}</span>
+                    {l.msg}
                   </div>
                 ))}
               </div>
