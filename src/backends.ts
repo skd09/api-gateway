@@ -69,10 +69,10 @@ function createBackend(port: number, name: string){
 }
 
 // Start 3 backends
-console.log('\n🖥️  Starting backend servers...\n');
+console.log('\nStarting backend servers...\n');
 createBackend(3001, 'Backend-A');
 createBackend(3002, 'Backend-B');
 createBackend(3003, 'Backend-C');
-console.log('\n   All backends ready.\n');
+console.log('\n All backends ready.\n');
 
 export { createBackend };
