@@ -1,0 +1,23 @@
+services:
+  backends:
+    build: .
+    command: npx ts-node src/backends.ts
+    ports:
+      - "3001:3001"
+      - "3002:3002"
+      - "3003:3003"
+
+  gateway:
+    build: .
+    command: npx ts-node src/gateway.ts
+    ports:
+      - "4000:4000"
+    depends_on:
+      - backends
+
+  dashboard:
+    image: nginx:alpine
+    ports:
+      - "5174:80"
+    volumes:
+      - ./frontend/public:/usr/share/nginx/html:ro
